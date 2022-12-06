@@ -1,6 +1,9 @@
 extern crate borsh;
 extern crate solana_program;
 
+pub mod instructions;
+pub mod state;
+
 #[cfg(not(feature = "no-entrypoint"))]
 pub mod entrypoint;
 

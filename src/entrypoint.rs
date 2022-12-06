@@ -1,13 +1,24 @@
-
+use borsh::BorshDeserialize;
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
 };
 
+use crate::instructions::{instantiate::Instantiate, BlawgdInstruction, Instruction};
+
 entrypoint!(process_instruction);
 fn process_instruction<'a>(
-    _program_id: &Pubkey,
-    _accounts: &'a [AccountInfo<'a>],
-    _args: &[u8],
+    program_id: &Pubkey,
+    accounts: &'a [AccountInfo<'a>],
+    args: &[u8],
 ) -> ProgramResult {
-    ProgramResult::Ok(())
+    let instruction_type = BlawgdInstruction::try_from_slice(args)?;
+
+    let mut instruction: Box<dyn Instruction> = match instruction_type {
+        BlawgdInstruction::Instantiate(args) => {
+            Box::new(Instantiate::new(*program_id, accounts, args)?)
+        }
+    };
+
+    instruction.validate()?;
+    instruction.execute()
 }
