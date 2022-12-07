@@ -8,6 +8,9 @@ solana-program = "1.14.10"
 borsh = "0.9.3"
 
 [dev-dependencies]
+solana-sdk = "1.14.10"
+solana-client = "1.14.10"
+solana-program-test = "1.14.10"
 
 
 [lib]

@@ -11,7 +11,7 @@ solana-test-validator
 
 Compile the solana program to bpf bytecode and deploy it to the solana cluster
 ```
-cargo build-bpf
+cargo build-sbf
 solana program deploy ./target/deploy/blawgd_solana.so
 ```
 

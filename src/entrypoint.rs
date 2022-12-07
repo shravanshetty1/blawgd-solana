@@ -6,9 +6,9 @@ use solana_program::{
 use crate::instructions::{instantiate::Instantiate, BlawgdInstruction, Instruction};
 
 entrypoint!(process_instruction);
-fn process_instruction<'a>(
+pub fn process_instruction(
     program_id: &Pubkey,
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &[AccountInfo],
     args: &[u8],
 ) -> ProgramResult {
     let instruction_type = BlawgdInstruction::try_from_slice(args)?;

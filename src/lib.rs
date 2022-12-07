@@ -2,6 +2,7 @@ use solana_program::program_error::ProgramError;
 
 pub mod instructions;
 pub mod state;
+pub mod util;
 
 #[cfg(not(feature = "no-entrypoint"))]
 pub mod entrypoint;
