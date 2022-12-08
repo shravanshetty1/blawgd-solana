@@ -2,7 +2,7 @@ use blawgd_solana::{
     instructions::{
         instantiate::InstantiateArgs, update_profile::UpdateProfileArgs, BlawgdInstruction,
     },
-    state::{Profile, ProgramState},
+    state::{account::Profile, account::UserAccount, ProgramState},
 };
 use borsh::{BorshDeserialize, BorshSerialize};
 
@@ -24,7 +24,7 @@ async fn basic() -> Result<(), Box<dyn std::error::Error>> {
         program_id,
         solana_program_test::processor!(blawgd_solana::entrypoint::process_instruction),
     );
-    let (mut client, mint, _) = pt.start().await;
+    let (client, mint, _) = pt.start().await;
 
     let user = Keypair::new();
     request_airdrop(client.clone(), &mint, &user, LAMPORTS_PER_SOL * 10).await?;
@@ -49,15 +49,15 @@ async fn update_profile(
     user: &Keypair,
     profile: Profile,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (profile_acc_addr, _) = Pubkey::find_program_address(
-        &[blawgd_solana::state::Profile::seed(user.pubkey()).as_slice()],
+    let (account_addr, _) = Pubkey::find_program_address(
+        &[UserAccount::seed(user.pubkey()).as_slice()],
         &program_id,
     );
 
     let update_profile_instruction = Instruction {
         program_id,
         accounts: vec![
-            AccountMeta::new(profile_acc_addr, false),
+            AccountMeta::new(account_addr, false),
             AccountMeta::new(user.pubkey(), true),
             AccountMeta::new(system_program::id(), false),
         ],
@@ -75,12 +75,12 @@ async fn update_profile(
     )
     .await?;
 
-    let profile_acc = client
-        .get_account(profile_acc_addr)
+    let account_acc = client
+        .get_account(account_addr)
         .await?
         .ok_or("could not find program state account")?;
 
-    let updated_profile = Profile::deserialize(&mut profile_acc.data.as_slice())?;
+    let updated_profile = UserAccount::deserialize(&mut account_acc.data.as_slice())?.profile;
     assert_eq!(updated_profile.name, profile.name);
     assert_eq!(updated_profile.image, profile.image);
     assert_eq!(updated_profile.bio, profile.bio);

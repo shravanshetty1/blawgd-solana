@@ -1,28 +1,28 @@
-use borsh::{BorshSerialize};
+use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::entrypoint::ProgramResult;
 
-use crate::{
-    state::{Profile},
-    util::create_pda,
-};
+use crate::{state::account::UserAccount, util::create_pda};
 
 use super::UpdateProfile;
 
 impl<'a, 'b> UpdateProfile<'a, 'b> {
     pub fn execute_instruction(&self) -> ProgramResult {
-        if self.accounts.profile.data.borrow().len() == 0 {
+        let mut user_account_state = if self.accounts.account_state.data.borrow().len() > 0 {
+            UserAccount::deserialize(&mut &**self.accounts.account_state.data.borrow())?
+        } else {
             create_pda(
                 &self.program_id,
-                Profile::space()?,
+                UserAccount::space()?,
                 self.accounts.signer,
-                self.accounts.profile,
+                self.accounts.account_state,
                 self.accounts.system_program,
-                Profile::seed(*self.accounts.signer.key).as_slice(),
+                UserAccount::seed(*self.accounts.signer.key).as_slice(),
             )?;
-        }
-        self.args
-            .profile
-            .serialize(&mut &mut self.accounts.profile.data.borrow_mut()[..])?;
+            UserAccount::default()
+        };
+        user_account_state.profile = self.args.profile.clone();
+        user_account_state
+            .serialize(&mut &mut self.accounts.account_state.data.borrow_mut()[..])?;
 
         Ok(())
     }

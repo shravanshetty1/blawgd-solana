@@ -5,7 +5,7 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::state::Profile;
+use crate::state::account::Profile;
 
 use super::Instruction;
 
@@ -18,7 +18,7 @@ pub struct UpdateProfileArgs {
 }
 
 struct UpdateProfileAccounts<'a, 'b> {
-    profile: &'a AccountInfo<'b>,
+    account_state: &'a AccountInfo<'b>,
     signer: &'a AccountInfo<'b>,
     system_program: &'a AccountInfo<'b>,
 }
@@ -36,14 +36,14 @@ impl<'a, 'b> UpdateProfile<'a, 'b> {
     ) -> Result<Self, ProgramError> {
         let accounts = &mut accounts.iter();
 
-        let profile = next_account_info(accounts)?;
+        let account_state = next_account_info(accounts)?;
         let signer = next_account_info(accounts)?;
         let system_program = next_account_info(accounts)?;
 
         Ok(UpdateProfile {
             program_id,
             accounts: UpdateProfileAccounts {
-                profile,
+                account_state,
                 signer,
                 system_program,
             },
