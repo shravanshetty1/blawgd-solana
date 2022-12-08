@@ -1,7 +1,7 @@
 use borsh::BorshSerialize;
 use solana_program::entrypoint::ProgramResult;
 
-use crate::{state::ProgramState, util::create_pda};
+use crate::{state::program_state::ProgramState, util::create_pda};
 
 use super::Instantiate;
 

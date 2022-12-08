@@ -16,8 +16,8 @@ pub struct InstantiateArgs {}
 #[derive(Debug)]
 struct InstantiateAccounts<'a, 'b> {
     program_state: &'a AccountInfo<'b>,
-    signer: &'a AccountInfo<'b>,
     system_program: &'a AccountInfo<'b>,
+    signer: &'a AccountInfo<'b>,
 }
 
 pub struct Instantiate<'a, 'b> {
@@ -34,8 +34,8 @@ impl<'a, 'b> Instantiate<'a, 'b> {
         let accounts = &mut accounts.iter();
 
         let program_state = next_account_info(accounts)?;
-        let signer = next_account_info(accounts)?;
         let system_account = next_account_info(accounts)?;
+        let signer = next_account_info(accounts)?;
 
         Ok(Instantiate {
             program_id,

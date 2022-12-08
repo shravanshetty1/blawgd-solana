@@ -13,13 +13,25 @@ pub struct UserAccount {
 
 impl UserAccount {
     pub fn space() -> crate::Result<usize> {
-        Ok(Profile::space()? + 16 + 16)
+        Ok(Profile::space()? + 16 + 16 + 16)
     }
     pub fn seed(address: Pubkey) -> Vec<u8> {
         let res = format!("account-{address}");
         solana_program::hash::hash(res.as_bytes())
             .to_bytes()
             .to_vec()
+    }
+}
+#[derive(Default, BorshSerialize, BorshDeserialize, Clone)]
+pub struct Profile {
+    pub name: String,
+    pub image: String,
+    pub bio: String,
+}
+
+impl Profile {
+    pub fn space() -> crate::Result<usize> {
+        Ok(100 + 200 + 300)
     }
 }
 
@@ -37,19 +49,6 @@ impl UserFollowingList {
         solana_program::hash::hash(res.as_bytes())
             .to_bytes()
             .to_vec()
-    }
-}
-
-#[derive(Default, BorshSerialize, BorshDeserialize, Clone)]
-pub struct Profile {
-    pub name: String,
-    pub image: String,
-    pub bio: String,
-}
-
-impl Profile {
-    pub fn space() -> crate::Result<usize> {
-        Ok(100 + 200 + 300)
     }
 }
 

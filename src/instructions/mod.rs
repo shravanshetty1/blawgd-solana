@@ -1,13 +1,18 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::entrypoint::ProgramResult;
+use solana_program::{entrypoint::ProgramResult};
 
-use self::{instantiate::InstantiateArgs, update_profile::UpdateProfileArgs, create_post::CreatePostArgs, update_following_list::UpdateFollowingListArgs};
+use self::{
+    create_post::{CreatePostArgs},
+    instantiate::{InstantiateArgs},
+    update_following_list::{UpdateFollowingListArgs},
+    update_profile::{UpdateProfileArgs},
+};
 
-pub mod instantiate;
-pub mod update_profile;
 pub mod create_post;
-pub mod update_following_list;
+pub mod instantiate;
 pub mod like_post;
+pub mod update_following_list;
+pub mod update_profile;
 
 pub trait Instruction {
     fn validate(&self) -> ProgramResult;

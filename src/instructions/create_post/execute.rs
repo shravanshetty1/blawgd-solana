@@ -5,6 +5,7 @@ use crate::{
     state::{
         account::{AccountPost, UserAccount},
         post::{Post, PostUserInteractionStatus},
+        program_state::ProgramState,
     },
     util::create_pda,
 };
@@ -16,7 +17,7 @@ impl<'a, 'b> CreatePost<'a, 'b> {
         let mut user_account_state =
             UserAccount::deserialize(&mut &**self.accounts.user_account.data.borrow())?;
         let mut program_state =
-            UserAccount::deserialize(&mut &**self.accounts.program_state.data.borrow())?;
+            ProgramState::deserialize(&mut &**self.accounts.program_state.data.borrow())?;
         let post = Post {
             creator: *self.accounts.signer.key,
             content: self.args.content.clone(),
@@ -53,7 +54,7 @@ impl<'a, 'b> CreatePost<'a, 'b> {
         post.serialize(&mut &mut self.accounts.post.data.borrow_mut()[..])?;
         account_post.serialize(&mut &mut self.accounts.account_post.data.borrow_mut()[..])?;
 
-        if post.parent_post.is_some() {
+        if let Some(parent_post_acc) = self.accounts.parent_post {
             if let Some(parent_post_user_interaction_status_acc) =
                 self.accounts.parent_post_user_interaction_status
             {
@@ -61,14 +62,18 @@ impl<'a, 'b> CreatePost<'a, 'b> {
                     PostUserInteractionStatus::deserialize(
                         &mut &**parent_post_user_interaction_status_acc.data.borrow(),
                     )?;
+                let mut parent_post = Post::deserialize(&mut &**parent_post_acc.data.borrow())?;
                 if post.is_repost {
                     parent_post_user_interaction_status.reposted = true;
+                    parent_post.repost_count += 1;
                 } else {
                     parent_post_user_interaction_status.commented = true;
+                    parent_post.comment_count += 1;
                 }
                 parent_post_user_interaction_status.serialize(
                     &mut &mut parent_post_user_interaction_status_acc.data.borrow_mut()[..],
                 )?;
+                parent_post.serialize(&mut &mut parent_post_acc.data.borrow_mut()[..])?;
             } else {
                 msg!("parent post user interaction status is invalid for repost/comment");
                 return Err(ProgramError::InvalidAccountData);

@@ -2,7 +2,7 @@ use blawgd_solana::{
     instructions::{
         instantiate::InstantiateArgs, update_profile::UpdateProfileArgs, BlawgdInstruction,
     },
-    state::{account::Profile, account::UserAccount, ProgramState},
+    state::{account::Profile, account::UserAccount, program_state::ProgramState},
 };
 use borsh::{BorshDeserialize, BorshSerialize};
 
@@ -49,10 +49,8 @@ async fn update_profile(
     user: &Keypair,
     profile: Profile,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (account_addr, _) = Pubkey::find_program_address(
-        &[UserAccount::seed(user.pubkey()).as_slice()],
-        &program_id,
-    );
+    let (account_addr, _) =
+        Pubkey::find_program_address(&[UserAccount::seed(user.pubkey()).as_slice()], &program_id);
 
     let update_profile_instruction = Instruction {
         program_id,
@@ -93,10 +91,8 @@ async fn instantiate_program(
     program_id: Pubkey,
     instantiater: &Keypair,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (program_state, _) = Pubkey::find_program_address(
-        &[blawgd_solana::state::ProgramState::seed().as_slice()],
-        &program_id,
-    );
+    let (program_state, _) =
+        Pubkey::find_program_address(&[ProgramState::seed().as_slice()], &program_id);
 
     let instantiate_instruction = Instruction {
         program_id,
