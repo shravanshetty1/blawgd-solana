@@ -1,4 +1,7 @@
-use solana_program::{pubkey::Pubkey, account_info::AccountInfo, entrypoint::ProgramResult, program::invoke_signed, sysvar::Sysvar};
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, program::invoke_signed, pubkey::Pubkey,
+    sysvar::Sysvar,
+};
 
 pub fn create_pda<'a>(
     program_id: &Pubkey,
@@ -18,7 +21,7 @@ pub fn create_pda<'a>(
         program_id,
     );
 
-    // TODO get nonce from args
+    // TODO get nonce from args?
 
     let (_, nonce) = Pubkey::find_program_address(&[seed], program_id);
     invoke_signed(

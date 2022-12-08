@@ -1,14 +1,17 @@
 use blawgd_solana::{
-    instructions::{instantiate::InstantiateArgs, BlawgdInstruction},
-    state::ProgramState,
+    instructions::{
+        instantiate::InstantiateArgs, update_profile::UpdateProfileArgs, BlawgdInstruction,
+    },
+    state::{Profile, ProgramState},
 };
 use borsh::{BorshDeserialize, BorshSerialize};
 
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     message::Message,
+    native_token::LAMPORTS_PER_SOL,
     pubkey::Pubkey,
-    system_program,
+    system_instruction, system_program,
 };
 use solana_program_test::{tokio, BanksClient};
 use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
@@ -21,10 +24,66 @@ async fn basic() -> Result<(), Box<dyn std::error::Error>> {
         program_id,
         solana_program_test::processor!(blawgd_solana::entrypoint::process_instruction),
     );
-    let (client, payer, _) = pt.start().await;
+    let (mut client, mint, _) = pt.start().await;
 
-    instantiate_program(client.clone(), program_id, &payer).await?;
+    let user = Keypair::new();
+    request_airdrop(client.clone(), &mint, &user, LAMPORTS_PER_SOL * 10).await?;
+
+    instantiate_program(client.clone(), program_id, &user).await?;
     println!("instantiated smart contract");
+
+    let profile = Profile {
+        name: "Johnny".to_string(),
+        image: "example image".to_string(),
+        bio: "eating sugar".to_string(),
+    };
+    update_profile(client.clone(), program_id, &user, profile).await?;
+    println!("update user profile");
+
+    Ok(())
+}
+
+async fn update_profile(
+    mut client: BanksClient,
+    program_id: Pubkey,
+    user: &Keypair,
+    profile: Profile,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let (profile_acc_addr, _) = Pubkey::find_program_address(
+        &[blawgd_solana::state::Profile::seed(user.pubkey()).as_slice()],
+        &program_id,
+    );
+
+    let update_profile_instruction = Instruction {
+        program_id,
+        accounts: vec![
+            AccountMeta::new(profile_acc_addr, false),
+            AccountMeta::new(user.pubkey(), true),
+            AccountMeta::new(system_program::id(), false),
+        ],
+        data: BlawgdInstruction::UpdateProfile(UpdateProfileArgs {
+            profile: profile.clone(),
+        })
+        .try_to_vec()?,
+    };
+
+    create_and_send_tx(
+        client.clone(),
+        vec![update_profile_instruction],
+        vec![user],
+        Some(&user.pubkey()),
+    )
+    .await?;
+
+    let profile_acc = client
+        .get_account(profile_acc_addr)
+        .await?
+        .ok_or("could not find program state account")?;
+
+    let updated_profile = Profile::deserialize(&mut profile_acc.data.as_slice())?;
+    assert_eq!(updated_profile.name, profile.name);
+    assert_eq!(updated_profile.image, profile.image);
+    assert_eq!(updated_profile.bio, profile.bio);
 
     Ok(())
 }
@@ -65,6 +124,17 @@ async fn instantiate_program(
     let program_state = ProgramState::deserialize(&mut program_state_acc.data.as_slice())?;
     assert_eq!(program_state.post_count, 0);
 
+    Ok(())
+}
+
+async fn request_airdrop(
+    client: BanksClient,
+    mint: &Keypair,
+    user: &Keypair,
+    lamports: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let ix = system_instruction::transfer(&mint.pubkey(), &user.pubkey(), lamports);
+    create_and_send_tx(client, vec![ix], vec![mint], Some(&mint.pubkey())).await?;
     Ok(())
 }
 

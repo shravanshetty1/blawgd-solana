@@ -1,9 +1,10 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::entrypoint::ProgramResult;
 
-use self::instantiate::InstantiateArgs;
+use self::{instantiate::InstantiateArgs, update_profile::UpdateProfileArgs};
 
 pub mod instantiate;
+pub mod update_profile;
 
 pub trait Instruction {
     fn validate(&self) -> ProgramResult;
@@ -13,4 +14,5 @@ pub trait Instruction {
 #[derive(BorshSerialize, BorshDeserialize)]
 pub enum BlawgdInstruction {
     Instantiate(InstantiateArgs),
+    UpdateProfile(UpdateProfileArgs),
 }

@@ -1,7 +1,5 @@
 use borsh::BorshSerialize;
-use solana_program::{
-    entrypoint::ProgramResult,
-};
+use solana_program::entrypoint::ProgramResult;
 
 use crate::{state::ProgramState, util::create_pda};
 
@@ -14,7 +12,7 @@ impl<'a, 'b> Instantiate<'a, 'b> {
             ProgramState::space()?,
             self.accounts.signer,
             self.accounts.program_state,
-            self.accounts.system_account,
+            self.accounts.system_program,
             ProgramState::seed().as_slice(),
         )?;
         let state = ProgramState { post_count: 0 };

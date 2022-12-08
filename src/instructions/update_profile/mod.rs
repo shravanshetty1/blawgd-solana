@@ -5,51 +5,54 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
+use crate::state::Profile;
+
 use super::Instruction;
 
 pub mod execute;
 pub mod validate;
 
-#[derive(Clone, BorshSerialize, BorshDeserialize, PartialEq, Debug)]
-pub struct InstantiateArgs {}
+#[derive(Clone, BorshSerialize, BorshDeserialize)]
+pub struct UpdateProfileArgs {
+    pub profile: Profile,
+}
 
-#[derive(Debug)]
-struct InstantiateAccounts<'a, 'b> {
-    program_state: &'a AccountInfo<'b>,
+struct UpdateProfileAccounts<'a, 'b> {
+    profile: &'a AccountInfo<'b>,
     signer: &'a AccountInfo<'b>,
     system_program: &'a AccountInfo<'b>,
 }
 
-pub struct Instantiate<'a, 'b> {
+pub struct UpdateProfile<'a, 'b> {
     program_id: Pubkey,
-    accounts: InstantiateAccounts<'a, 'b>,
-    args: InstantiateArgs,
+    accounts: UpdateProfileAccounts<'a, 'b>,
+    args: UpdateProfileArgs,
 }
-impl<'a, 'b> Instantiate<'a, 'b> {
+impl<'a, 'b> UpdateProfile<'a, 'b> {
     pub fn new(
         program_id: Pubkey,
         accounts: &'a [AccountInfo<'b>],
-        args: InstantiateArgs,
+        args: UpdateProfileArgs,
     ) -> Result<Self, ProgramError> {
         let accounts = &mut accounts.iter();
 
-        let program_state = next_account_info(accounts)?;
+        let profile = next_account_info(accounts)?;
         let signer = next_account_info(accounts)?;
-        let system_account = next_account_info(accounts)?;
+        let system_program = next_account_info(accounts)?;
 
-        Ok(Instantiate {
+        Ok(UpdateProfile {
             program_id,
-            accounts: InstantiateAccounts {
-                program_state,
+            accounts: UpdateProfileAccounts {
+                profile,
                 signer,
-                system_program: system_account,
+                system_program,
             },
             args,
         })
     }
 }
 
-impl<'a, 'b> Instruction for Instantiate<'a, 'b> {
+impl<'a, 'b> Instruction for UpdateProfile<'a, 'b> {
     fn validate(&self) -> solana_program::entrypoint::ProgramResult {
         self.validate_instruction()
     }
