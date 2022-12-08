@@ -23,3 +23,22 @@ impl Post {
             .to_vec()
     }
 }
+
+#[derive(Default, BorshSerialize, borsh::BorshDeserialize, Clone)]
+pub struct PostUserInteractionStatus {
+    pub liked: bool,
+    pub commented: bool,
+    pub reposted: bool,
+}
+
+impl PostUserInteractionStatus {
+    pub fn space() -> crate::Result<usize> {
+        Ok(3)
+    }
+    pub fn seed(post: Pubkey, user: Pubkey) -> Vec<u8> {
+        let res = format!("post-user-interaction-status-{post}-{user}");
+        solana_program::hash::hash(res.as_bytes())
+            .to_bytes()
+            .to_vec()
+    }
+}

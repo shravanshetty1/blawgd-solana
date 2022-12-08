@@ -1,10 +1,10 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::entrypoint::ProgramResult;
+use solana_program::{entrypoint::ProgramResult, msg, program_error::ProgramError};
 
 use crate::{
     state::{
         account::{AccountPost, UserAccount},
-        post::Post,
+        post::{Post, PostUserInteractionStatus},
     },
     util::create_pda,
 };
@@ -52,6 +52,28 @@ impl<'a, 'b> CreatePost<'a, 'b> {
         program_state.serialize(&mut &mut self.accounts.program_state.data.borrow_mut()[..])?;
         post.serialize(&mut &mut self.accounts.post.data.borrow_mut()[..])?;
         account_post.serialize(&mut &mut self.accounts.account_post.data.borrow_mut()[..])?;
+
+        if post.parent_post.is_some() {
+            if let Some(parent_post_user_interaction_status_acc) =
+                self.accounts.parent_post_user_interaction_status
+            {
+                let mut parent_post_user_interaction_status =
+                    PostUserInteractionStatus::deserialize(
+                        &mut &**parent_post_user_interaction_status_acc.data.borrow(),
+                    )?;
+                if post.is_repost {
+                    parent_post_user_interaction_status.reposted = true;
+                } else {
+                    parent_post_user_interaction_status.commented = true;
+                }
+                parent_post_user_interaction_status.serialize(
+                    &mut &mut parent_post_user_interaction_status_acc.data.borrow_mut()[..],
+                )?;
+            } else {
+                msg!("parent post user interaction status is invalid for repost/comment");
+                return Err(ProgramError::InvalidAccountData);
+            }
+        }
 
         Ok(())
     }

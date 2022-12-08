@@ -7,6 +7,7 @@ pub mod instantiate;
 pub mod update_profile;
 pub mod create_post;
 pub mod update_following_list;
+pub mod like_post;
 
 pub trait Instruction {
     fn validate(&self) -> ProgramResult;
