@@ -1,4 +1,3 @@
-
 use blawgd_solana::{
     instructions::{
         create_post::CreatePostArgs, instantiate::InstantiateArgs,
@@ -7,7 +6,7 @@ use blawgd_solana::{
     state::{
         account::Profile,
         account::{AccountPost, UserAccount},
-        post::Post,
+        post::{Post, PostUserInteractionStatus},
         program_state::ProgramState,
     },
 };
@@ -77,6 +76,48 @@ async fn basic() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
     println!("created post");
 
+    let (post_addr, _) = Pubkey::find_program_address(&[Post::seed(1).as_slice()], &program_id);
+    create_post(
+        client.clone(),
+        program_id,
+        &user,
+        CreatePostArgs {
+            parent_post: Some(post_addr),
+            is_repost: false,
+            content: "commenting on 'Hello World!'".to_string(),
+        },
+    )
+    .await?;
+    println!("commented on post");
+
+    create_post(
+        client.clone(),
+        program_id,
+        &user,
+        CreatePostArgs {
+            parent_post: Some(post_addr),
+            is_repost: true,
+            content: "reposting 'Hello World!'".to_string(),
+        },
+    )
+    .await?;
+    println!("reposted post");
+
+    let (repost_addr, _) = Pubkey::find_program_address(&[Post::seed(3).as_slice()], &program_id);
+    // TODO fix this bug
+    create_post(
+        client.clone(),
+        program_id,
+        &user,
+        CreatePostArgs {
+            parent_post: Some(repost_addr),
+            is_repost: false,
+            content: "commenting on respost".to_string(),
+        },
+    )
+    .await?;
+    println!("commented on repost - this should not be allowed - need to fix this");
+
     Ok(())
 }
 
@@ -112,7 +153,7 @@ async fn create_post(
         &program_id,
     );
 
-    let create_post_instr = Instruction {
+    let mut create_post_instr = Instruction {
         program_id,
         accounts: vec![
             AccountMeta::new(program_state_addr, false),
@@ -124,6 +165,21 @@ async fn create_post(
         ],
         data: BlawgdInstruction::CreatePost(args.clone()).try_to_vec()?,
     };
+
+    if let Some(parent_post_addr) = args.parent_post {
+        create_post_instr
+            .accounts
+            .push(AccountMeta::new(parent_post_addr, false));
+        let parent_post_user_interaction_status_acc = Pubkey::find_program_address(
+            &[PostUserInteractionStatus::seed(parent_post_addr, user.pubkey()).as_slice()],
+            &program_id,
+        )
+        .0;
+        create_post_instr.accounts.push(AccountMeta::new(
+            parent_post_user_interaction_status_acc,
+            false,
+        ));
+    }
 
     create_and_send_tx(
         client.clone(),

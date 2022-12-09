@@ -33,7 +33,7 @@ pub struct PostUserInteractionStatus {
 
 impl PostUserInteractionStatus {
     pub fn space() -> crate::Result<usize> {
-        Ok(3)
+        Ok(6)
     }
     pub fn seed(post: Pubkey, user: Pubkey) -> Vec<u8> {
         let res = format!("post-user-interaction-status-{post}-{user}");

@@ -49,10 +49,9 @@ impl<'a, 'b> CreatePost<'a, 'b> {
         let signer = next_account_info(accounts)?;
 
         let (parent_post, parent_post_user_interaction_status) = if args.parent_post.is_some() {
-            (
-                Some(next_account_info(accounts)?),
-                Some(next_account_info(accounts)?),
-            )
+            let parent_post = Some(next_account_info(accounts)?);
+            let parent_post_user_interaction_status = Some(next_account_info(accounts)?);
+            (parent_post, parent_post_user_interaction_status)
         } else {
             (None, None)
         };

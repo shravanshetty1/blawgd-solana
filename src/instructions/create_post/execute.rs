@@ -72,7 +72,7 @@ impl<'a, 'b> CreatePost<'a, 'b> {
                             parent_post_user_interaction_status_acc,
                             self.accounts.system_program,
                             PostUserInteractionStatus::seed(
-                                *self.accounts.post.key,
+                                *parent_post_acc.key,
                                 *self.accounts.signer.key,
                             )
                             .as_slice(),
