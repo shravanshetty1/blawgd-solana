@@ -15,113 +15,76 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     message::Message,
-    native_token::LAMPORTS_PER_SOL,
     pubkey::Pubkey,
     system_instruction, system_program,
 };
-use solana_program_test::{tokio, BanksClient};
+use solana_program_test::BanksClient;
 use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
 
-#[tokio::test]
-async fn basic() -> Result<(), Box<dyn std::error::Error>> {
-    let program_id = blawgd_solana::id();
-    let pt = solana_program_test::ProgramTest::new(
-        "blawgd_solana",
+// TODO check if post and account post count got updated
+pub async fn like_post(
+    mut client: BanksClient,
+    program_id: Pubkey,
+    user: &Keypair,
+    post_addr: Pubkey,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let post_acc = client
+        .get_account(post_addr)
+        .await?
+        .ok_or("could not find post state account")?;
+
+    let post = Post::deserialize(&mut post_acc.data.as_slice())?;
+    let original_like_count = post.like_count;
+
+    let post_user_interaction_status_addr = Pubkey::find_program_address(
+        &[PostUserInteractionStatus::seed(post_addr, user.pubkey()).as_slice()],
+        &program_id,
+    )
+    .0;
+
+    let like_post_instr = Instruction {
         program_id,
-        solana_program_test::processor!(blawgd_solana::entrypoint::process_instruction),
-    );
-    let (client, mint, _) = pt.start().await;
-
-    let user = Keypair::new();
-    request_airdrop(client.clone(), &mint, &user, LAMPORTS_PER_SOL * 10).await?;
-
-    instantiate_program(client.clone(), program_id, &user).await?;
-    println!("instantiated smart contract");
-
-    if instantiate_program(client.clone(), program_id, &user)
-        .await
-        .is_err()
-    {
-        println!("success - failed to instantiate smart contract twice");
-    } else {
-        println!("failed - instantiated smart contract twice");
-    }
-
-    let profile = Profile {
-        name: "Johnny".to_string(),
-        image: "example image".to_string(),
-        bio: "eating sugar".to_string(),
+        accounts: vec![
+            AccountMeta::new(post_addr, false),
+            AccountMeta::new(post_user_interaction_status_addr, false),
+            AccountMeta::new(system_program::id(), false),
+            AccountMeta::new(user.pubkey(), true),
+        ],
+        data: BlawgdInstruction::LikePost(blawgd_solana::instructions::like_post::LikePostArgs {})
+            .try_to_vec()?,
     };
-    update_profile(client.clone(), program_id, &user, profile).await?;
-    println!("created user profile");
 
-    let profile = Profile {
-        name: "Johnny Boy".to_string(),
-        image: "example image".to_string(),
-        bio: "eating sugar".to_string(),
-    };
-    update_profile(client.clone(), program_id, &user, profile).await?;
-    println!("updated user profile");
-
-    create_post(
+    create_and_send_tx(
         client.clone(),
-        program_id,
-        &user,
-        CreatePostArgs {
-            parent_post: None,
-            is_repost: false,
-            content: "Hello World!".to_string(),
-        },
+        vec![like_post_instr],
+        vec![user],
+        Some(&user.pubkey()),
     )
     .await?;
-    println!("created post");
 
-    let (post_addr, _) = Pubkey::find_program_address(&[Post::seed(1).as_slice()], &program_id);
-    create_post(
-        client.clone(),
-        program_id,
-        &user,
-        CreatePostArgs {
-            parent_post: Some(post_addr),
-            is_repost: false,
-            content: "commenting on 'Hello World!'".to_string(),
-        },
-    )
-    .await?;
-    println!("commented on post");
+    let post_acc = client
+        .get_account(post_addr)
+        .await?
+        .ok_or("could not find program state account")?;
 
-    create_post(
-        client.clone(),
-        program_id,
-        &user,
-        CreatePostArgs {
-            parent_post: Some(post_addr),
-            is_repost: true,
-            content: "reposting 'Hello World!'".to_string(),
-        },
-    )
-    .await?;
-    println!("reposted post");
+    let post = Post::deserialize(&mut post_acc.data.as_slice())?;
+    assert_eq!(post.like_count, original_like_count + 1);
 
-    let (repost_addr, _) = Pubkey::find_program_address(&[Post::seed(3).as_slice()], &program_id);
-    // TODO fix this bug
-    create_post(
-        client.clone(),
-        program_id,
-        &user,
-        CreatePostArgs {
-            parent_post: Some(repost_addr),
-            is_repost: false,
-            content: "commenting on respost".to_string(),
-        },
-    )
-    .await?;
-    println!("commented on repost - this should not be allowed - need to fix this");
+    let post_user_interaction_status_acc = client
+        .get_account(post_user_interaction_status_addr)
+        .await?
+        .ok_or("could not find post user interaction status state account")?;
+
+    let post_user_interaction_status = PostUserInteractionStatus::deserialize(
+        &mut post_user_interaction_status_acc.data.as_slice(),
+    )?;
+    assert_eq!(post_user_interaction_status.liked, true);
 
     Ok(())
 }
 
-async fn create_post(
+// TODO check if post and account post count got updated
+pub async fn create_post(
     mut client: BanksClient,
     program_id: Pubkey,
     user: &Keypair,
@@ -206,7 +169,7 @@ async fn create_post(
     Ok(())
 }
 
-async fn update_profile(
+pub async fn update_profile(
     mut client: BanksClient,
     program_id: Pubkey,
     user: &Keypair,
@@ -249,7 +212,7 @@ async fn update_profile(
     Ok(())
 }
 
-async fn instantiate_program(
+pub async fn instantiate_program(
     mut client: BanksClient,
     program_id: Pubkey,
     instantiater: &Keypair,
@@ -286,7 +249,7 @@ async fn instantiate_program(
     Ok(())
 }
 
-async fn request_airdrop(
+pub async fn request_airdrop(
     client: BanksClient,
     mint: &Keypair,
     user: &Keypair,
@@ -297,7 +260,7 @@ async fn request_airdrop(
     Ok(())
 }
 
-async fn create_and_send_tx(
+pub async fn create_and_send_tx(
     mut client: BanksClient,
     instructions: Vec<Instruction>,
     signers: Vec<&dyn Signer>,
