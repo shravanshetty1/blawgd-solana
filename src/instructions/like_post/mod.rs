@@ -5,20 +5,18 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-
-
 use super::Instruction;
 
 pub mod execute;
 pub mod validate;
 
 #[derive(Clone, BorshSerialize, BorshDeserialize)]
-pub struct LikePostArgs {
-}
+pub struct LikePostArgs {}
 
 struct LikePostAccounts<'a, 'b> {
     post_account: &'a AccountInfo<'b>,
     post_user_interaction_status: &'a AccountInfo<'b>,
+    system_program: &'a AccountInfo<'b>,
     signer: &'a AccountInfo<'b>,
 }
 
@@ -37,6 +35,7 @@ impl<'a, 'b> LikePost<'a, 'b> {
 
         let post_account = next_account_info(accounts)?;
         let post_user_interaction_status = next_account_info(accounts)?;
+        let system_program = next_account_info(accounts)?;
         let signer = next_account_info(accounts)?;
 
         Ok(LikePost {
@@ -44,6 +43,7 @@ impl<'a, 'b> LikePost<'a, 'b> {
             accounts: LikePostAccounts {
                 post_account,
                 post_user_interaction_status,
+                system_program,
                 signer,
             },
             args,

@@ -1,11 +1,12 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{entrypoint::ProgramResult};
+use solana_program::entrypoint::ProgramResult;
 
 use self::{
-    create_post::{CreatePostArgs},
-    instantiate::{InstantiateArgs},
-    update_following_list::{UpdateFollowingListArgs},
-    update_profile::{UpdateProfileArgs},
+    create_post::CreatePostArgs,
+    instantiate::InstantiateArgs,
+    like_post::{LikePostArgs},
+    update_following_list::UpdateFollowingListArgs,
+    update_profile::UpdateProfileArgs,
 };
 
 pub mod create_post;
@@ -25,4 +26,5 @@ pub enum BlawgdInstruction {
     UpdateProfile(UpdateProfileArgs),
     CreatePost(CreatePostArgs),
     UpdateFollowingList(UpdateFollowingListArgs),
+    LikePost(LikePostArgs),
 }

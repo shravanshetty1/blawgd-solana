@@ -61,8 +61,8 @@ impl AccountPost {
     pub fn space() -> crate::Result<usize> {
         Ok(32)
     }
-    pub fn seed(acc_post_num: u128) -> Vec<u8> {
-        let res = format!("account-post-{acc_post_num}");
+    pub fn seed(acc_addr: Pubkey, acc_post_num: u128) -> Vec<u8> {
+        let res = format!("account-post-{acc_addr}-{acc_post_num}");
         solana_program::hash::hash(res.as_bytes())
             .to_bytes()
             .to_vec()

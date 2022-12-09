@@ -15,7 +15,7 @@ use super::CreatePost;
 impl<'a, 'b> CreatePost<'a, 'b> {
     pub fn execute_instruction(&self) -> ProgramResult {
         let mut user_account_state =
-            UserAccount::deserialize(&mut &**self.accounts.user_account.data.borrow())?;
+            UserAccount::deserialize(&mut &**self.accounts.signer_account.data.borrow())?;
         let mut program_state =
             ProgramState::deserialize(&mut &**self.accounts.program_state.data.borrow())?;
         let post = Post {
@@ -47,9 +47,10 @@ impl<'a, 'b> CreatePost<'a, 'b> {
             self.accounts.signer,
             self.accounts.account_post,
             self.accounts.system_program,
-            AccountPost::seed(user_account_state.post_count).as_slice(),
+            AccountPost::seed(post.creator, user_account_state.post_count).as_slice(),
         )?;
-        user_account_state.serialize(&mut &mut self.accounts.user_account.data.borrow_mut()[..])?;
+        user_account_state
+            .serialize(&mut &mut self.accounts.signer_account.data.borrow_mut()[..])?;
         program_state.serialize(&mut &mut self.accounts.program_state.data.borrow_mut()[..])?;
         post.serialize(&mut &mut self.accounts.post.data.borrow_mut()[..])?;
         account_post.serialize(&mut &mut self.accounts.account_post.data.borrow_mut()[..])?;
@@ -59,9 +60,26 @@ impl<'a, 'b> CreatePost<'a, 'b> {
                 self.accounts.parent_post_user_interaction_status
             {
                 let mut parent_post_user_interaction_status =
-                    PostUserInteractionStatus::deserialize(
-                        &mut &**parent_post_user_interaction_status_acc.data.borrow(),
-                    )?;
+                    if parent_post_user_interaction_status_acc.data.borrow().len() > 0 {
+                        PostUserInteractionStatus::deserialize(
+                            &mut &**parent_post_user_interaction_status_acc.data.borrow(),
+                        )?
+                    } else {
+                        create_pda(
+                            &self.program_id,
+                            PostUserInteractionStatus::space()?,
+                            self.accounts.signer,
+                            parent_post_user_interaction_status_acc,
+                            self.accounts.system_program,
+                            PostUserInteractionStatus::seed(
+                                *self.accounts.post.key,
+                                *self.accounts.signer.key,
+                            )
+                            .as_slice(),
+                        )?;
+                        PostUserInteractionStatus::default()
+                    };
+
                 let mut parent_post = Post::deserialize(&mut &**parent_post_acc.data.borrow())?;
                 if post.is_repost {
                     parent_post_user_interaction_status.reposted = true;

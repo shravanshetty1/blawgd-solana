@@ -19,8 +19,8 @@ pub struct UpdateProfileArgs {
 
 struct UpdateProfileAccounts<'a, 'b> {
     account_state: &'a AccountInfo<'b>,
-    signer: &'a AccountInfo<'b>,
     system_program: &'a AccountInfo<'b>,
+    signer: &'a AccountInfo<'b>,
 }
 
 pub struct UpdateProfile<'a, 'b> {
@@ -37,15 +37,15 @@ impl<'a, 'b> UpdateProfile<'a, 'b> {
         let accounts = &mut accounts.iter();
 
         let account_state = next_account_info(accounts)?;
-        let signer = next_account_info(accounts)?;
         let system_program = next_account_info(accounts)?;
+        let signer = next_account_info(accounts)?;
 
         Ok(UpdateProfile {
             program_id,
             accounts: UpdateProfileAccounts {
                 account_state,
-                signer,
                 system_program,
+                signer,
             },
             args,
         })

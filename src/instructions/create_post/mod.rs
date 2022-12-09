@@ -12,14 +12,14 @@ pub mod validate;
 
 #[derive(Clone, BorshSerialize, BorshDeserialize)]
 pub struct CreatePostArgs {
-    parent_post: Option<Pubkey>,
-    is_repost: bool,
-    content: String,
+    pub parent_post: Option<Pubkey>,
+    pub is_repost: bool,
+    pub content: String,
 }
 
 struct CreatePostAccounts<'a, 'b> {
     program_state: &'a AccountInfo<'b>,
-    user_account: &'a AccountInfo<'b>,
+    signer_account: &'a AccountInfo<'b>,
     post: &'a AccountInfo<'b>,
     account_post: &'a AccountInfo<'b>,
     system_program: &'a AccountInfo<'b>,
@@ -61,7 +61,7 @@ impl<'a, 'b> CreatePost<'a, 'b> {
             program_id,
             accounts: CreatePostAccounts {
                 program_state,
-                user_account,
+                signer_account: user_account,
                 post,
                 account_post,
                 system_program,

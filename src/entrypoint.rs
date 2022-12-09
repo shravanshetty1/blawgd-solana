@@ -4,8 +4,9 @@ use solana_program::{
 };
 
 use crate::instructions::{
-    create_post::CreatePost, instantiate::Instantiate, update_following_list::UpdateFollowingList,
-    update_profile::UpdateProfile, BlawgdInstruction, Instruction,
+    create_post::CreatePost, instantiate::Instantiate, like_post::LikePost,
+    update_following_list::UpdateFollowingList, update_profile::UpdateProfile, BlawgdInstruction,
+    Instruction,
 };
 
 entrypoint!(process_instruction);
@@ -29,6 +30,7 @@ pub fn process_instruction(
         BlawgdInstruction::UpdateFollowingList(args) => {
             Box::new(UpdateFollowingList::new(*program_id, accounts, args)?)
         }
+        BlawgdInstruction::LikePost(args) => Box::new(LikePost::new(*program_id, accounts, args)?),
     };
 
     instruction.validate()?;

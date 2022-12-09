@@ -1,8 +1,15 @@
+
 use blawgd_solana::{
     instructions::{
-        instantiate::InstantiateArgs, update_profile::UpdateProfileArgs, BlawgdInstruction,
+        create_post::CreatePostArgs, instantiate::InstantiateArgs,
+        update_profile::UpdateProfileArgs, BlawgdInstruction,
     },
-    state::{account::Profile, account::UserAccount, program_state::ProgramState},
+    state::{
+        account::Profile,
+        account::{AccountPost, UserAccount},
+        post::Post,
+        program_state::ProgramState,
+    },
 };
 use borsh::{BorshDeserialize, BorshSerialize};
 
@@ -32,13 +39,113 @@ async fn basic() -> Result<(), Box<dyn std::error::Error>> {
     instantiate_program(client.clone(), program_id, &user).await?;
     println!("instantiated smart contract");
 
+    if instantiate_program(client.clone(), program_id, &user)
+        .await
+        .is_err()
+    {
+        println!("success - failed to instantiate smart contract twice");
+    } else {
+        println!("failed - instantiated smart contract twice");
+    }
+
     let profile = Profile {
         name: "Johnny".to_string(),
         image: "example image".to_string(),
         bio: "eating sugar".to_string(),
     };
     update_profile(client.clone(), program_id, &user, profile).await?;
-    println!("update user profile");
+    println!("created user profile");
+
+    let profile = Profile {
+        name: "Johnny Boy".to_string(),
+        image: "example image".to_string(),
+        bio: "eating sugar".to_string(),
+    };
+    update_profile(client.clone(), program_id, &user, profile).await?;
+    println!("updated user profile");
+
+    create_post(
+        client.clone(),
+        program_id,
+        &user,
+        CreatePostArgs {
+            parent_post: None,
+            is_repost: false,
+            content: "Hello World!".to_string(),
+        },
+    )
+    .await?;
+    println!("created post");
+
+    Ok(())
+}
+
+async fn create_post(
+    mut client: BanksClient,
+    program_id: Pubkey,
+    user: &Keypair,
+    args: CreatePostArgs,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let (user_acc_addr, _) =
+        Pubkey::find_program_address(&[UserAccount::seed(user.pubkey()).as_slice()], &program_id);
+    let user_acc = client
+        .get_account(user_acc_addr)
+        .await?
+        .ok_or("could not find user account")?;
+    let user_acc = UserAccount::deserialize(&mut user_acc.data.as_slice())?;
+
+    let (user_acc_post_addr, _) = Pubkey::find_program_address(
+        &[AccountPost::seed(user.pubkey(), user_acc.post_count + 1).as_slice()],
+        &program_id,
+    );
+
+    let (program_state_addr, _) =
+        Pubkey::find_program_address(&[ProgramState::seed().as_slice()], &program_id);
+    let program_state_acc = client
+        .get_account(program_state_addr)
+        .await?
+        .ok_or("could not find program state account")?;
+    let program_state = ProgramState::deserialize(&mut program_state_acc.data.as_slice())?;
+
+    let (post_addr, _) = Pubkey::find_program_address(
+        &[Post::seed(program_state.post_count + 1).as_slice()],
+        &program_id,
+    );
+
+    let create_post_instr = Instruction {
+        program_id,
+        accounts: vec![
+            AccountMeta::new(program_state_addr, false),
+            AccountMeta::new(user_acc_addr, false),
+            AccountMeta::new(post_addr, false),
+            AccountMeta::new(user_acc_post_addr, false),
+            AccountMeta::new(system_program::id(), false),
+            AccountMeta::new(user.pubkey(), true),
+        ],
+        data: BlawgdInstruction::CreatePost(args.clone()).try_to_vec()?,
+    };
+
+    create_and_send_tx(
+        client.clone(),
+        vec![create_post_instr],
+        vec![user],
+        Some(&user.pubkey()),
+    )
+    .await?;
+
+    let post_acc = client
+        .get_account(post_addr)
+        .await?
+        .ok_or("could not find program state account")?;
+
+    let post = Post::deserialize(&mut post_acc.data.as_slice())?;
+    assert_eq!(post.parent_post, args.parent_post);
+    assert_eq!(post.creator, user.pubkey());
+    assert_eq!(post.content, args.content);
+    assert_eq!(post.is_repost, args.is_repost);
+    assert_eq!(post.like_count, 0);
+    assert_eq!(post.comment_count, 0);
+    assert_eq!(post.repost_count, 0);
 
     Ok(())
 }
@@ -56,8 +163,8 @@ async fn update_profile(
         program_id,
         accounts: vec![
             AccountMeta::new(account_addr, false),
-            AccountMeta::new(user.pubkey(), true),
             AccountMeta::new(system_program::id(), false),
+            AccountMeta::new(user.pubkey(), true),
         ],
         data: BlawgdInstruction::UpdateProfile(UpdateProfileArgs {
             profile: profile.clone(),
@@ -98,8 +205,8 @@ async fn instantiate_program(
         program_id,
         accounts: vec![
             AccountMeta::new(program_state, false),
-            AccountMeta::new(instantiater.pubkey(), true),
             AccountMeta::new(system_program::id(), false),
+            AccountMeta::new(instantiater.pubkey(), true),
         ],
         data: BlawgdInstruction::Instantiate(InstantiateArgs {}).try_to_vec()?,
     };
