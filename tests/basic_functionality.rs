@@ -1,13 +1,13 @@
 pub mod helper;
 
 use blawgd_solana::{
-    instructions::create_post::CreatePostArgs,
+    instructions::{create_post::CreatePostArgs, update_following_list::UpdateFollowingListArgs},
     state::{account::Profile, post::Post},
 };
 use helper::*;
 use solana_program::{native_token::LAMPORTS_PER_SOL, pubkey::Pubkey};
 use solana_program_test::tokio;
-use solana_sdk::signature::Keypair;
+use solana_sdk::{signature::Keypair, signer::Signer};
 
 #[tokio::test]
 async fn basic_functionality() -> Result<(), Box<dyn std::error::Error>> {
@@ -110,6 +110,53 @@ async fn basic_functionality() -> Result<(), Box<dyn std::error::Error>> {
 
     // like_post(client.clone(), program_id, &user, post_addr).await?;
     // println!("liked post again with same user - this should not be allowed - need to fix this");
+
+    let user2 = Keypair::new();
+    request_airdrop(client.clone(), &mint, &user2, LAMPORTS_PER_SOL * 10).await?;
+
+    let profile = Profile {
+        name: "Bob".to_string(),
+        image: "example image".to_string(),
+        bio: "The builder".to_string(),
+    };
+    update_profile(client.clone(), program_id, &user2, profile).await?;
+    println!("created second users profile");
+
+    update_following_list(
+        client.clone(),
+        program_id,
+        &user,
+        UpdateFollowingListArgs {
+            user: user2.pubkey(),
+            add_operation: true,
+        },
+    )
+    .await?;
+    println!("first user followed second user");
+
+    update_following_list(
+        client.clone(),
+        program_id,
+        &user,
+        UpdateFollowingListArgs {
+            user: user2.pubkey(),
+            add_operation: false,
+        },
+    )
+    .await?;
+    println!("first user unfollowed second user");
+
+    // update_following_list(
+    //     client.clone(),
+    //     program_id,
+    //     &user,
+    //     UpdateFollowingListArgs {
+    //         user: user.pubkey(),
+    //         add_operation: true,
+    //     },
+    // )
+    // .await?;
+    // println!("this should fail should not be able to follow or unfollow yourself");
 
     Ok(())
 }

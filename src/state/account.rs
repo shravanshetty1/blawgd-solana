@@ -35,7 +35,7 @@ impl Profile {
     }
 }
 
-#[derive(Default, BorshSerialize, BorshDeserialize, Clone)]
+#[derive(Debug, Default, BorshSerialize, BorshDeserialize, Clone)]
 pub struct UserFollowingList {
     pub list: BTreeSet<Pubkey>,
 }

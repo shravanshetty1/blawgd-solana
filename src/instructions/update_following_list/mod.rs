@@ -5,8 +5,6 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-
-
 use super::Instruction;
 
 pub mod execute;

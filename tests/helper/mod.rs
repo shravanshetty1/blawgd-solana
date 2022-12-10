@@ -1,11 +1,14 @@
 use blawgd_solana::{
     instructions::{
-        create_post::CreatePostArgs, instantiate::InstantiateArgs,
-        update_profile::UpdateProfileArgs, BlawgdInstruction,
+        create_post::CreatePostArgs,
+        instantiate::InstantiateArgs,
+        update_following_list::{UpdateFollowingListArgs},
+        update_profile::UpdateProfileArgs,
+        BlawgdInstruction,
     },
     state::{
         account::Profile,
-        account::{AccountPost, UserAccount},
+        account::{AccountPost, UserAccount, UserFollowingList},
         post::{Post, PostUserInteractionStatus},
         program_state::ProgramState,
     },
@@ -20,6 +23,67 @@ use solana_program::{
 };
 use solana_program_test::BanksClient;
 use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
+
+pub async fn update_following_list(
+    mut client: BanksClient,
+    program_id: Pubkey,
+    user: &Keypair,
+    args: UpdateFollowingListArgs,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let (signer_user_acc_addr, _) =
+        Pubkey::find_program_address(&[UserAccount::seed(user.pubkey()).as_slice()], &program_id);
+    let (to_follow_user_acc_addr, _) =
+        Pubkey::find_program_address(&[UserAccount::seed(args.user).as_slice()], &program_id);
+    let (following_list_addr, _) = Pubkey::find_program_address(
+        &[UserFollowingList::seed(user.pubkey()).as_slice()],
+        &program_id,
+    );
+
+    let update_following_list_instr = Instruction {
+        program_id,
+        accounts: vec![
+            AccountMeta::new(following_list_addr, false),
+            AccountMeta::new(signer_user_acc_addr, false),
+            AccountMeta::new(to_follow_user_acc_addr, false),
+            AccountMeta::new(system_program::id(), false),
+            AccountMeta::new(user.pubkey(), true),
+        ],
+        data: BlawgdInstruction::UpdateFollowingList(args.clone()).try_to_vec()?,
+    };
+
+    if let Some(original_following_list_acc) = client.get_account(following_list_addr).await? {
+        let original_following_list =
+            UserFollowingList::deserialize(&mut original_following_list_acc.data.as_slice())?;
+        // println!("original-following-list - {:?}", original_following_list);
+        assert_eq!(
+            original_following_list.list.contains(&args.user),
+            !args.add_operation
+        );
+    }
+
+    create_and_send_tx(
+        client.clone(),
+        vec![update_following_list_instr],
+        vec![user],
+        Some(&user.pubkey()),
+    )
+    .await?;
+
+    let modified_following_list_acc = client
+        .get_account(following_list_addr)
+        .await?
+        .ok_or("could not find following list state account")?;
+
+    let modified_following_list =
+        UserFollowingList::deserialize(&mut modified_following_list_acc.data.as_slice())?;
+    // println!("modified-following-list - {:?}", modified_following_list);
+    assert_eq!(
+        modified_following_list.list.contains(&args.user),
+        args.add_operation
+    );
+
+    Ok(())
+}
 
 // TODO check if post and account post count got updated
 pub async fn like_post(
