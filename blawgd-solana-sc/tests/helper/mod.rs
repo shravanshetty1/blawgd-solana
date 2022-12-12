@@ -1,9 +1,7 @@
-use blawgd_solana::{
+use blawgd_solana_sc::{
     instructions::{
-        create_post::CreatePostArgs,
-        instantiate::InstantiateArgs,
-        update_following_list::{UpdateFollowingListArgs},
-        update_profile::UpdateProfileArgs,
+        create_post::CreatePostArgs, instantiate::InstantiateArgs,
+        update_following_list::UpdateFollowingListArgs, update_profile::UpdateProfileArgs,
         BlawgdInstruction,
     },
     state::{
@@ -114,8 +112,10 @@ pub async fn like_post(
             AccountMeta::new(system_program::id(), false),
             AccountMeta::new(user.pubkey(), true),
         ],
-        data: BlawgdInstruction::LikePost(blawgd_solana::instructions::like_post::LikePostArgs {})
-            .try_to_vec()?,
+        data: BlawgdInstruction::LikePost(
+            blawgd_solana_sc::instructions::like_post::LikePostArgs {},
+        )
+        .try_to_vec()?,
     };
 
     create_and_send_tx(

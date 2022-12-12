@@ -1,6 +1,6 @@
 pub mod helper;
 
-use blawgd_solana::{
+use blawgd_solana_sc::{
     instructions::{create_post::CreatePostArgs, update_following_list::UpdateFollowingListArgs},
     state::{account::Profile, post::Post},
 };
@@ -11,11 +11,11 @@ use solana_sdk::{signature::Keypair, signer::Signer};
 
 #[tokio::test]
 async fn basic_functionality() -> Result<(), Box<dyn std::error::Error>> {
-    let program_id = blawgd_solana::id();
+    let program_id = blawgd_solana_sc::id();
     let pt = solana_program_test::ProgramTest::new(
         "blawgd_solana",
         program_id,
-        solana_program_test::processor!(blawgd_solana::entrypoint::process_instruction),
+        solana_program_test::processor!(blawgd_solana_sc::entrypoint::process_instruction),
     );
     let (client, mint, _) = pt.start().await;
 
