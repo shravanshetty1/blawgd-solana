@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title> Blawgd </title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+<div class="page">
+    <div class="nav-bar">
+        <div class="nav-bar-header">
+            Blawgd
+        </div>
+        <div class="nav-bar-menu">
+            <div class="nav-bar-menu-element">Home</div>
+            <div class="nav-bar-menu-element">Profile</div>
+            <div class="nav-bar-menu-element">About</div>
+        </div>
+        <div class="login-link-component-wrapper">
+            <img src="/profile.jpeg" class="post-component-account-info-image">
+            <div class="login-link-component-text">Login/Logout</div>
+        </div>
+    </div>
+    <div class="main-column">
+        <div class="account-info-wrapper">
+            <img src="/profile.jpeg" class="account-info-photo">
+            <div class="account-info-name">John Doe</div>
+            <div class="account-info-address">@cosm1234312341234</div>
+            <div class="button">Edit Profile</div>
+        </div>
+        <div class="post-component">
+            <div class="post-component-text-wrapper">
+                <img src="/profile.jpeg" class="post-component-account-info-image">
+                <div class="post-component-text-content">
+                    <div class="post-component-account-info">
+                        <div class="post-component-account-info-name">Bob Sag</div>
+                        <div class="post-component-account-info-address">@sag</div>
+                    </div>
+                    <div class="post-component-text">
+                        Some post lololol. Some post ahahha.
+                    </div>
+                </div>
+            </div>
+            <div class="post-component-bar">
+                <div class="post-component-bar-button"><div class="post-component-bar-button-content">Like</div></div>
+                <div class="post-component-bar-button"><div class="post-component-bar-button-content">Repost</div></div>
+                <div class="post-component-bar-button"><div class="post-component-bar-button-content">Comment</div></div>
+            </div>
+        </div>
+        <div class="post-component">
+            <div class="post-component-text-wrapper">
+                <img src="/profile.jpeg" class="post-component-account-info-image">
+                <div class="post-component-text-content">
+                    <div class="post-component-account-info">
+                        <div class="post-component-account-info-name">Bob Sag</div>
+                        <div class="post-component-account-info-address">@sag</div>
+                    </div>
+                    <div class="post-component-text">
+                        Some post lololol. Some post ahahha.
+                    </div>
+                </div>
+            </div>
+            <div class="post-component-bar">
+                <div class="post-component-bar-button"><div class="post-component-bar-button-content">Like</div></div>
+                <div class="post-component-bar-button"><div class="post-component-bar-button-content">Repost</div></div>
+                <div class="post-component-bar-button"><div class="post-component-bar-button-content">Comment</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="secondary-column"></div>
+</div>
+
+</body>
+<script type="module">
+    import init from './pkg/client.js';
+
+    init();
+</script>
+</html>

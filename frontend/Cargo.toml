@@ -1,0 +1,58 @@
+[package]
+name = "blawgd-client"
+version = "0.1.0"
+authors = ["Shravan Shetty <shravanshetty322@gmail.com>"]
+edition = "2018"
+resolver = "2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+futures = "0.3.4"
+wasm-bindgen = "0.2.74"
+gloo = "0.3.0"
+crw-wallet = { git = "https://github.com/shravanshetty1/cosmos-rust-wallet", branch = "grpc-web", features = ["wasm-bindgen"] }
+crw-client = { git = "https://github.com/shravanshetty1/cosmos-rust-wallet", branch = "grpc-web" }
+wasm-bindgen-futures = "0.4.24"
+cosmos-sdk-proto = "0.8.0"
+prost = { version = "0.9" }
+prost_2 = { package = "prost", version = "0.7.0" }
+console_error_panic_hook = "0.1.6"
+tonic = { version = "0.6", default-features = false, features = ["codegen", "prost"] }
+tiny-bip39 = { version = "0.8.0", default-features = false }
+grpc-web-client = { git = "https://github.com/titanous/grpc-web-client" }
+reqwest = { version = "=0.10.10", features = ["json"] }
+tendermint-light-client = { git = "https://github.com/shravanshetty1/tendermint-rs", branch = "wasm", default-features = false, features = ["std", "eyre_tracer"] }
+tendermint-rpc = { git = "https://github.com/shravanshetty1/tendermint-rs", branch = "wasm" }
+tendermint = { git = "https://github.com/shravanshetty1/tendermint-rs", branch = "wasm" }
+tendermint-proto = { git = "https://github.com/shravanshetty1/tendermint-rs", branch = "wasm" }
+serde = "1.0.106"
+serde_json = "1"
+contracts = "0.4.0"
+async-trait = "0.1.51"
+chrono = { version = "0.4", features = ["wasmbind"] }
+ics23 = { git = "https://github.com/confio/ics23", branch = "master" }
+hex = "0.4.3"
+anyhow = "1.0"
+async-lock = "2.4.0"
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+    'Window',
+    'Document',
+    'Element',
+    'Storage',
+    'EventListener',
+    'Location',
+    'HtmlInputElement',
+    'HtmlTextAreaElement',
+    'HtmlImageElement',
+    'Node',
+]
+
+[patch.crates-io]
+cosmos-sdk-proto = { git = "https://github.com/shravanshetty1/cosmos-rust", branch = "wasm4" }
