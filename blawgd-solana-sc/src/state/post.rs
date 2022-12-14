@@ -1,3 +1,4 @@
+use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
 
@@ -37,6 +38,23 @@ impl PostUserInteractionStatus {
     }
     pub fn seed(post: Pubkey, user: Pubkey) -> Vec<u8> {
         let res = format!("post-user-interaction-status-{post}-{user}");
+        solana_program::hash::hash(res.as_bytes())
+            .to_bytes()
+            .to_vec()
+    }
+}
+
+#[derive(Default, BorshSerialize, BorshDeserialize, Clone)]
+pub struct Comment {
+    pub post: Pubkey,
+}
+
+impl Comment {
+    pub fn space() -> crate::Result<usize> {
+        Ok(32)
+    }
+    pub fn seed(parent_post_addr: Pubkey, child_post_num: u128) -> Vec<u8> {
+        let res = format!("child-post-{parent_post_addr}-{child_post_num}");
         solana_program::hash::hash(res.as_bytes())
             .to_bytes()
             .to_vec()

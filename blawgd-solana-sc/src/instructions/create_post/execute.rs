@@ -4,7 +4,7 @@ use solana_program::{entrypoint::ProgramResult, msg, program_error::ProgramError
 use crate::{
     state::{
         account::{AccountPost, UserAccount},
-        post::{Post, PostUserInteractionStatus},
+        post::{Comment, Post, PostUserInteractionStatus},
         program_state::ProgramState,
     },
     util::create_pda,
@@ -87,6 +87,24 @@ impl<'a, 'b> CreatePost<'a, 'b> {
                 } else {
                     parent_post_user_interaction_status.commented = true;
                     parent_post.comment_count += 1;
+
+                    let comment_acc = self.accounts.comment.ok_or_else(|| {
+                        msg!("could not find comment account for comment post");
+                        ProgramError::InvalidAccountData
+                    })?;
+                    create_pda(
+                        &self.program_id,
+                        Comment::space()?,
+                        self.accounts.signer,
+                        comment_acc,
+                        self.accounts.system_program,
+                        Comment::seed(*parent_post_acc.key, parent_post.comment_count)
+                            .as_slice(),
+                    )?;
+                    let comment_state = Comment {
+                        post: *self.accounts.post.key,
+                    };
+                    comment_state.serialize(&mut &mut comment_acc.data.borrow_mut()[..])?;
                 }
                 parent_post_user_interaction_status.serialize(
                     &mut &mut parent_post_user_interaction_status_acc.data.borrow_mut()[..],

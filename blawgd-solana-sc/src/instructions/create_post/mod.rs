@@ -26,6 +26,7 @@ struct CreatePostAccounts<'a, 'b> {
     signer: &'a AccountInfo<'b>,
     parent_post: Option<&'a AccountInfo<'b>>,
     parent_post_user_interaction_status: Option<&'a AccountInfo<'b>>,
+    comment: Option<&'a AccountInfo<'b>>,
 }
 
 pub struct CreatePost<'a, 'b> {
@@ -48,13 +49,19 @@ impl<'a, 'b> CreatePost<'a, 'b> {
         let system_program = next_account_info(accounts)?;
         let signer = next_account_info(accounts)?;
 
-        let (parent_post, parent_post_user_interaction_status) = if args.parent_post.is_some() {
-            let parent_post = Some(next_account_info(accounts)?);
-            let parent_post_user_interaction_status = Some(next_account_info(accounts)?);
-            (parent_post, parent_post_user_interaction_status)
-        } else {
-            (None, None)
-        };
+        let (parent_post, parent_post_user_interaction_status, comment) =
+            if args.parent_post.is_some() {
+                let parent_post = Some(next_account_info(accounts)?);
+                let parent_post_user_interaction_status = Some(next_account_info(accounts)?);
+                let comment = if !args.is_repost {
+                    Some(next_account_info(accounts)?)
+                } else {
+                    None
+                };
+                (parent_post, parent_post_user_interaction_status, comment)
+            } else {
+                (None, None, None)
+            };
 
         Ok(CreatePost {
             program_id,
@@ -67,6 +74,7 @@ impl<'a, 'b> CreatePost<'a, 'b> {
                 signer,
                 parent_post,
                 parent_post_user_interaction_status,
+                comment
             },
             args,
         })

@@ -7,7 +7,7 @@ use blawgd_solana_sc::{
     state::{
         account::Profile,
         account::{AccountPost, UserAccount, UserFollowingList},
-        post::{Post, PostUserInteractionStatus},
+        post::{Comment, Post, PostUserInteractionStatus},
         program_state::ProgramState,
     },
 };
@@ -193,7 +193,14 @@ pub async fn create_post(
         data: BlawgdInstruction::CreatePost(args.clone()).try_to_vec()?,
     };
 
+    let mut original_parent_post: Option<(Pubkey, Post)> = None;
     if let Some(parent_post_addr) = args.parent_post {
+        let parent_post_acc = client
+            .get_account(parent_post_addr)
+            .await?
+            .ok_or("could not find program state account")?;
+        let parent_post = Post::deserialize(&mut parent_post_acc.data.as_slice())?;
+
         create_post_instr
             .accounts
             .push(AccountMeta::new(parent_post_addr, false));
@@ -206,6 +213,17 @@ pub async fn create_post(
             parent_post_user_interaction_status_acc,
             false,
         ));
+        if !args.is_repost {
+            let comment_addr = Pubkey::find_program_address(
+                &[Comment::seed(parent_post_addr, parent_post.comment_count + 1).as_slice()],
+                &program_id,
+            )
+            .0;
+            create_post_instr
+                .accounts
+                .push(AccountMeta::new(comment_addr, false));
+        }
+        original_parent_post = Some((parent_post_addr, parent_post));
     }
 
     create_and_send_tx(
@@ -229,6 +247,41 @@ pub async fn create_post(
     assert_eq!(post.like_count, 0);
     assert_eq!(post.comment_count, 0);
     assert_eq!(post.repost_count, 0);
+
+    if let Some((parent_post_addr, original_parent_post)) = original_parent_post {
+        let parent_post_acc = client
+            .get_account(parent_post_addr)
+            .await?
+            .ok_or("could not find program state account")?;
+        let parent_post = Post::deserialize(&mut parent_post_acc.data.as_slice())?;
+
+        if args.is_repost {
+            assert_eq!(
+                original_parent_post.repost_count + 1,
+                parent_post.repost_count
+            );
+        } else {
+            assert_eq!(
+                original_parent_post.comment_count + 1,
+                parent_post.comment_count
+            );
+
+            let comment_addr = Pubkey::find_program_address(
+                &[
+                    Comment::seed(parent_post_addr, original_parent_post.comment_count + 1)
+                        .as_slice(),
+                ],
+                &program_id,
+            )
+            .0;
+            let comment_acc = client
+                .get_account(comment_addr)
+                .await?
+                .ok_or("could not find program state account")?;
+            let comment = Comment::deserialize(&mut comment_acc.data.as_slice())?;
+            assert_eq!(comment.post, post_addr)
+        }
+    }
 
     Ok(())
 }

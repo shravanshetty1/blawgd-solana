@@ -105,6 +105,20 @@ async fn basic_functionality() -> Result<(), Box<dyn std::error::Error>> {
     // .await?;
     // println!("commented on repost - this should not be allowed - need to fix this");
 
+    let (post_addr, _) = Pubkey::find_program_address(&[Post::seed(1).as_slice()], &program_id);
+    create_post(
+        client.clone(),
+        program_id,
+        &user,
+        CreatePostArgs {
+            parent_post: Some(post_addr),
+            is_repost: false,
+            content: "commenting on 'Hello World!' - again".to_string(),
+        },
+    )
+    .await?;
+    println!("commented on post - again");
+
     like_post(client.clone(), program_id, &user, post_addr).await?;
     println!("liked post");
 
